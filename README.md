@@ -32,6 +32,10 @@
 $ npm install
 ```
 
+## Prepare app
+
+The environment variables used by this application are copied from the ".env.example" file to the ".env" file, which contains the internal variables.
+
 ## Running the app
 
 ```bash
