@@ -7,17 +7,25 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcryptjs from 'bcryptjs';
+import { JwtService } from '@nestjs/jwt';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { User } from './entities/user.entity';
+import { JwtPayload } from './interfaces/jwt-payload';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name)
+    private userModel: Model<User>,
+    private jwtService: JwtService,
+  ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(
+    createUserDto: CreateUserDto,
+  ): Promise<{ user: User; token: string }> {
     const { password, email, ...userData } = createUserDto;
 
     try {
@@ -30,8 +38,7 @@ export class AuthService {
       await newUser.save();
 
       const { password: _, ...user } = newUser.toJSON();
-      // 3 Generate JWT
-      return user;
+      return { user, token: this.getJwt({ id: newUser.id }) };
     } catch (error) {
       if (error.code === 11000) {
         throw new BadRequestException(
@@ -42,7 +49,9 @@ export class AuthService {
     }
   }
 
-  async login(loginUserDto: LoginUserDto) {
+  async login(
+    loginUserDto: LoginUserDto,
+  ): Promise<{ user: User; token: string }> {
     const { email, password } = loginUserDto;
 
     const user = await this.userModel.findOne({ email });
@@ -51,7 +60,7 @@ export class AuthService {
     }
 
     const { password: _, ...rest } = user.toJSON();
-    return { ...rest, token: '' };
+    return { user: rest, token: this.getJwt({ id: user.id }) };
   }
 
   findAll() {
@@ -68,5 +77,10 @@ export class AuthService {
 
   remove(id: number) {
     return `This action removes a #${id} auth`;
+  }
+
+  getJwt(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload);
+    return token;
   }
 }
