@@ -9,11 +9,14 @@ import { Model } from 'mongoose';
 import * as bcryptjs from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import {
+  CreateUserDto,
+  LoginUserDto,
+  RegisterUserDto,
+  UpdateAuthDto,
+} from './dto';
 import { User } from './entities/user.entity';
-import { JwtPayload } from './interfaces/jwt-payload';
+import { JwtPayload, LoginResponse } from './interfaces';
 
 @Injectable()
 export class AuthService {
@@ -23,9 +26,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async create(
-    createUserDto: CreateUserDto,
-  ): Promise<{ user: User; token: string }> {
+  async create(createUserDto: CreateUserDto): Promise<User> {
     const { password, email, ...userData } = createUserDto;
 
     try {
@@ -39,7 +40,7 @@ export class AuthService {
 
       const { password: _, ...user } = newUser.toJSON();
 
-      return { user, token: this.getJwt({ id: newUser.id }) };
+      return user;
     } catch (error) {
       if (error.code === 11000) {
         throw new BadRequestException(`${email.toLowerCase()} already exists!`);
@@ -48,9 +49,17 @@ export class AuthService {
     }
   }
 
-  async login(
-    loginUserDto: LoginUserDto,
-  ): Promise<{ user: User; token: string }> {
+  async register(registerUserDto: RegisterUserDto): Promise<LoginResponse> {
+    const { email, name, password } = registerUserDto;
+    const user = await this.create({ email, name, password });
+
+    return {
+      user,
+      token: this.getJwt({ id: user._id }),
+    };
+  }
+
+  async login(loginUserDto: LoginUserDto): Promise<LoginResponse> {
     const { email, password } = loginUserDto;
 
     const user = await this.userModel.findOne({
