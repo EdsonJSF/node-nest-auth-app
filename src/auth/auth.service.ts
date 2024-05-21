@@ -31,19 +31,18 @@ export class AuthService {
     try {
       const newUser = new this.userModel({
         password: bcryptjs.hashSync(password, 10),
-        email: email.toLocaleLowerCase(),
+        email: email.toLowerCase(),
         ...userData,
       });
 
       await newUser.save();
 
       const { password: _, ...user } = newUser.toJSON();
+
       return { user, token: this.getJwt({ id: newUser.id }) };
     } catch (error) {
       if (error.code === 11000) {
-        throw new BadRequestException(
-          `${email.toLocaleLowerCase()} already exists!`,
-        );
+        throw new BadRequestException(`${email.toLowerCase()} already exists!`);
       }
       throw new InternalServerErrorException('Something terrible happen!!!');
     }
@@ -54,12 +53,16 @@ export class AuthService {
   ): Promise<{ user: User; token: string }> {
     const { email, password } = loginUserDto;
 
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userModel.findOne({
+      email: email.toLowerCase(),
+    });
+
     if (!user || !bcryptjs.compareSync(password, user.password)) {
       throw new UnauthorizedException('Not valid credentials');
     }
 
     const { password: _, ...rest } = user.toJSON();
+
     return { user: rest, token: this.getJwt({ id: user.id }) };
   }
 
