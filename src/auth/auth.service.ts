@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -75,12 +76,20 @@ export class AuthService {
     return { user: rest, token: this.getJwt({ id: user.id }) };
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  findAll(): Promise<User[]> {
+    return this.userModel.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
+  async findUserById(id: number | string): Promise<User> {
+    const user = await this.userModel.findById(id);
+
+    if (!user) {
+      throw new NotFoundException(`user "${id}" does not exists!`);
+    }
+
+    const { password: _, ...rest } = user.toJSON();
+
+    return rest;
   }
 
   update(id: number, updateAuthDto: UpdateAuthDto) {

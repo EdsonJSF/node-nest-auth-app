@@ -6,6 +6,7 @@ import {
   Param,
   Delete,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
@@ -14,6 +15,7 @@ import {
   UpdateAuthDto,
   RegisterUserDto,
 } from './dto';
+import { AuthGuard } from './guards/auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -34,14 +36,15 @@ export class AuthController {
     return this.authService.login(loginUserDto);
   }
 
+  @UseGuards(AuthGuard)
   @Get()
   findAll() {
     return this.authService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+  findUserById(@Param('id') id: string) {
+    return this.authService.findUserById(+id);
   }
 
   @Put(':id')
