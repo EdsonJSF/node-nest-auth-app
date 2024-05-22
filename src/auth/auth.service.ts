@@ -76,6 +76,13 @@ export class AuthService {
     return { user: rest, token: this.getJwt({ id: user.id }) };
   }
 
+  async checkToken(user: User): Promise<LoginResponse> {
+    return {
+      user,
+      token: this.getJwt({ id: user._id }),
+    };
+  }
+
   findAll(): Promise<User[]> {
     return this.userModel.find();
   }
